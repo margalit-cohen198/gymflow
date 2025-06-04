@@ -5,6 +5,8 @@ import Trainer from '../models/Trainer.js';
 import { hashPassword, comparePassword } from '../utils/authUtils.js';
 import jwt from 'jsonwebtoken'; // לסשנים (tokens)
 
+//פנייה לDB   SQL
+
 const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_jwt_key'; // טוקן סודי מהגדרות סביבה!
 
 class AuthService {

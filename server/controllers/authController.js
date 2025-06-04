@@ -1,6 +1,6 @@
 // controllers/authController.js
 import authService from '../services/authService.js';
-
+// פה הולך הלוגיקה
 class AuthController {
     async register(req, res) {
         try {
