@@ -3,19 +3,26 @@ import express from 'express';
 import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes.js';
 import sequelize from './config/db.js'; // ייבוא אובייקט החיבור ל-DB
+// server.js (או הקובץ הראשי שלך)
 
-dotenv.config(); // טען משתני סביבה מ-.env
+dotenv.config();
 
 const app = express();
-app.use(express.json()); // מאפשר ל-Express לקרוא JSON בבקשות
-
-// נתיבי אימות
-app.use('/api/auth', authRoutes);
-
-// סינכרון עם מסד הנתונים והפעלת השרת
 const PORT = process.env.PORT || 3000;
 
-sequelize.sync({ force: false }) // 'force: true' ימחק וייצור מחדש את הטבלאות (רק בפיתוח!)
+// Middleware
+app.use(express.json()); // מאפשר לנתח גוף בקשות JSON
+
+// ראוט בסיסי עבור נתיב ה-root
+app.get('/', (req, res) => {
+    res.send('Welcome to the GymFlow API!');
+});
+
+// הגדרת ראוטי API
+app.use('/api/auth', authRoutes); // דוגמה לראוטים לאימות
+
+// סנכרון מסד הנתונים והפעלת השרת
+sequelize.sync({ force: false }) // force: true ימחק ויצור מחדש את הטבלאות בכל הרצה (לא מומלץ בפרודקשן!)
     .then(() => {
         console.log('Database synced successfully.');
         app.listen(PORT, () => {
