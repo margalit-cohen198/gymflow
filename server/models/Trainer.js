@@ -1,39 +1,21 @@
 // models/Trainer.js
-import { DataTypes } from 'sequelize';
-import sequelize from '../config/db.js'; // נתיב לחיבור ה-DB
-import User from './User.js'; // ייבוא מודל User, כי יש קשר
+import pool from '../config/db.js';
 
-const Trainer = sequelize.define('Trainer', {
-    user_id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        references: {
-            model: User, // מתייחס למודל User
-            key: 'id',
-        },
-        onDelete: 'CASCADE', // אם משתמש נמחק, גם רשומת המאמן תימחק
-    },
-    specialization: {
-        type: DataTypes.STRING,
-        allowNull: true, // לפי הסכימה, אין NOT NULL
-    },
-    bio: {
-        type: DataTypes.TEXT,
-        allowNull: true, // לפי הסכימה, NULLABLE
-    },
-    is_available: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: true, // לפי הסכימה
-    },
-}, {
-    tableName: 'trainers',
-    timestamps: false, // מכיוון שהטבלה trainers לא מכילה created_at/updated_at
-});
+class Trainer {
+    static async create(trainerData) {
+        const { user_id, specialization, bio } = trainerData;
+        const [result] = await pool.execute(
+            `INSERT INTO trainers (user_id, specialization, bio) 
+             VALUES (?, ?, ?)`,
+            [user_id, specialization, bio]
+        );
+        return { id: result.insertId, ...trainerData };
+    }
 
-// הגדרת קשר 1:1 בין User ל-Trainer
-// Trainer שייך ל-User (כלומר, לכל Trainer יש User אחד תואם)
-Trainer.belongsTo(User, { foreignKey: 'user_id', targetKey: 'id' });
-// User יכול להיות Trainer (כלומר, לכל User יכול להיות Trainer אחד תואם)
-User.hasOne(Trainer, { foreignKey: 'user_id', sourceKey: 'id' });
+    static async findByUserId(userId) {
+        const [rows] = await pool.execute('SELECT * FROM trainers WHERE user_id = ?', [userId]);
+        return rows[0];
+    }
+}
 
 export default Trainer;

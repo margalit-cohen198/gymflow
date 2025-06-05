@@ -1,5 +1,5 @@
 // utils/authUtils.js
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 const SALT_ROUNDS = 10; // מספר סבבי גיבוב - ככל שיותר גבוה, בטוח יותר אך איטי יותר
 

@@ -1,86 +1,87 @@
 // services/authService.js
-import User from '../models/User.js';
-import Trainee from '../models/Trainee.js';
-import Trainer from '../models/Trainer.js';
-import { hashPassword, comparePassword } from '../utils/authUtils.js';
-import jwt from 'jsonwebtoken'; // לסשנים (tokens)
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import * as userService from './userService.js';
+import pool from '../config/db.js';
 
-//פנייה לDB   SQL
+const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_jwt_key'; // טוקן סודי מהגדרות סביבה!
+// פונקציית הרשמה למשתמש חדש
+export async function register(userData) {
+    const connection = await pool.getConnection();
 
-class AuthService {
-    async register(userData) {
-        const { first_name, last_name, email, password, phone_number, user_type, date_of_birth, gender, specialization, bio } = userData;
-
-        // 1. בדוק אם המייל כבר קיים
-        const existingUser = await User.findOne({ where: { email } });
+    try {
+        // בדוק אם המייל קיים
+        const existingUser = await userService.findUserByEmail(userData.email);
         if (existingUser) {
-            throw new Error('Email already registered.');
+            throw new Error('Email already registered');
         }
 
-        // 2. הצפן סיסמה
-        const password_hash = await hashPassword(password);
+        // הצפן סיסמה
+        const password_hash = await bcrypt.hash(userData.password, 10);
 
-        // 3. צור משתמש בטבלת users [cite: 22]
-        const newUser = await User.create({
-            first_name,
-            last_name,
-            email,
-            password_hash,
-            phone_number,
-            user_type,
-        });
+        // התחל טרנזקציה
+        await connection.beginTransaction();
 
-        // 4. צור רשומה בטבלה הספציפית (trainees או trainers) [cite: 24, 25]
-        if (user_type === 'trainee') {
-            await Trainee.create({
-                user_id: newUser.id,
-                date_of_birth,
-                gender,
-            });
-        } else if (user_type === 'trainer') {
-            await Trainer.create({
-                user_id: newUser.id,
-                specialization,
-                bio,
-            });
-        } else {
-             // אולי צריך לטפל במנהל
-             // או לזרוק שגיאה אם user_type אינו חוקי עבור רישום עצמי
+        try {
+            // צור משתמש בסיסי
+            const userId = await userService.createUser(userData);
+
+            // שמור פרטי התחברות
+            await userService.saveUserCredentials(userId, password_hash);
+
+            // צור פרופיל ספציפי
+            if (userData.user_type === 'trainee') {
+                await userService.createTraineeProfile(userId, userData.date_of_birth, userData.gender);
+            } else if (userData.user_type === 'trainer') {
+                await userService.createTrainerProfile(userId, userData.specialization, userData.bio);
+            }
+
+            await connection.commit();
+
+            // החזר פרטי משתמש
+            return await userService.getUserById(userId);
+
+        } catch (error) {
+            await connection.rollback();
+            throw error;
         }
-
-        // 5. החזר אובייקט משתמש (ללא סיסמה)
-        const userResponse = newUser.toJSON();
-        delete userResponse.password_hash;
-        return userResponse;
-    }
-
-    async login(email, password) {
-        // 1. מצא משתמש לפי מייל [cite: 22]
-        const user = await User.findOne({ where: { email } });
-        if (!user) {
-            throw new Error('Invalid credentials.');
-        }
-
-        // 2. השווה סיסמאות
-        const isMatch = await comparePassword(password, user.password_hash);
-        if (!isMatch) {
-            throw new Error('Invalid credentials.');
-        }
-
-        // 3. צור טוקן JWT
-        const token = jwt.sign(
-            { id: user.id, user_type: user.user_type, email: user.email },
-            JWT_SECRET,
-            { expiresIn: '1h' } // תוקף הטוקן
-        );
-
-        // 4. החזר טוקן ופרטי משתמש בסיסיים
-        const userResponse = user.toJSON();
-        delete userResponse.password_hash;
-        return { token, user: userResponse };
+    } finally {
+        connection.release();
     }
 }
 
-export default new AuthService();
+// פונקציית התחברות למשתמש קיים
+export async function login(email, password) {
+    // קבל פרטי משתמש כולל סיסמה מוצפנת
+    const user = await userService.getUserWithCredentials(email);
+
+    if (!user) {
+        throw new Error('Invalid credentials');
+    }
+
+    // בדוק סיסמה
+    const isMatch = await bcrypt.compare(password, user.password_hash);
+    if (!isMatch) {
+        throw new Error('Invalid credentials');
+    }
+    const token = jwt.sign(
+        // האובייקט הראשון - הפרטים שיהיו מוצפנים בתוך הטוקן (payload)
+        {
+            id: user.id,           // מזהה המשתמש - נשמר בטוקן לזיהוי מהיר
+            user_type: user.type,  // סוג המשתמש (trainee/trainer) - לבדיקת הרשאות
+            email: user.email      // אימייל - מידע נוסף שימושי
+        },
+        // הפרמטר השני - המפתח הסודי שאיתו מצפינים את הטוקן
+        JWT_SECRET,  // מגיע מ-process.env.JWT_SECRET או ערך ברירת מחדל
+        // הפרמטר השלישי - אפשרויות נוספות
+        {
+            expiresIn: '1h'  // הטוקן יפוג תוקף אחרי שעה
+        }
+    );
+
+    // הסר סיסמה מוצפנת מהאובייקט
+    delete user.password_hash;
+
+    return { token, user };
+}
