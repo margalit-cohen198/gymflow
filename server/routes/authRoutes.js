@@ -1,7 +1,9 @@
 // routes/authRoutes.js
 import express from 'express';
 import * as authController from '../controllers/authController.js';
-import { verify } from 'jsonwebtoken';
+import pkg from 'jsonwebtoken';
+import { verifyToken } from '../middleware/authMiddleware.js';
+const { verify } = pkg;
 
 const router = express.Router();
 

@@ -1,9 +1,9 @@
-import React from 'react';
-import { 
-    Grid, 
-    Card, 
-    CardContent, 
-    Typography, 
+import React, { useCallback } from 'react';
+import {
+    Grid,
+    Card,
+    CardContent,
+    Typography,
     Button,
     List,
     ListItem,
@@ -12,38 +12,65 @@ import {
     Avatar,
     ListItemSecondaryAction,
     IconButton,
-    Box
 } from '@mui/material';
-import type { Theme } from '@mui/material/styles';
-import type { SxProps } from '@mui/system';
-import { 
-    Person as PersonIcon, 
+import {
+    Person as PersonIcon,
     Add as AddIcon,
     Edit as EditIcon,
-    CalendarToday as CalendarIcon 
+    CalendarToday as CalendarIcon
 } from '@mui/icons-material';
 import DashboardLayout from './DashboardLayout';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+
+interface Session {
+    id: number;
+    time: string;
+    client: string;
+    type: string;
+}
+
+interface Client {
+    id: number;
+    name: string;
+    nextSession: string;
+}
 
 const TrainerDashboard: React.FC = () => {
     const { user } = useAuth();
+    const navigate = useNavigate();
 
-    const todaySessions = [
+    const todaySessions: Session[] = [
         { id: 1, time: '10:00', client: 'דוד כהן', type: 'אימון אישי' },
         { id: 2, time: '15:30', client: 'שרה לוי', type: 'אימון זוגי' },
     ];
 
-    const upcomingClients = [
+    const upcomingClients: Client[] = [
         { id: 1, name: 'רחל גולדברג', nextSession: '2024-01-21' },
         { id: 2, name: 'יוסי מזרחי', nextSession: '2024-01-22' },
         { id: 3, name: 'מיכל אברהם', nextSession: '2024-01-23' },
     ];
 
-    return (
-        <DashboardLayout title={`שלום ${user?.first_name}`}>            <Grid container spacing={3} component="div">
+    const handleAddClient = useCallback(() => {
+        navigate('/add-client');
+    }, [navigate]);
+
+    const handleAddSession = useCallback(() => {
+        navigate('/add-session');
+    }, [navigate]);
+
+    const handleEditSession = useCallback((sessionId: number) => {
+        navigate(`/edit-session/${sessionId}`);
+    }, [navigate]);
+
+    const handleEditClient = useCallback((clientId: number) => {
+        navigate(`/edit-client/${clientId}`);
+    }, [navigate]); return (
+        <DashboardLayout title={`שלום ${user?.first_name}`}>
+            <Grid container spacing={3} component="div">
                 {/* Quick Actions */}
-                <Grid item xs={12} md={6} component="div">
-                    <Card>
+                <Grid item xs={12} md={6}>
+                    <Card elevation={3}>
                         <CardContent>
                             <Typography variant="h6" gutterBottom>
                                 פעולות מהירות
@@ -52,6 +79,7 @@ const TrainerDashboard: React.FC = () => {
                                 variant="contained"
                                 color="primary"
                                 startIcon={<AddIcon />}
+                                onClick={handleAddClient}
                                 sx={{ mr: 2, mb: 1 }}
                             >
                                 הוסף מתאמן חדש
@@ -60,6 +88,7 @@ const TrainerDashboard: React.FC = () => {
                                 variant="contained"
                                 color="secondary"
                                 startIcon={<CalendarIcon />}
+                                onClick={handleAddSession}
                                 sx={{ mb: 1 }}
                             >
                                 קבע אימון חדש
@@ -68,8 +97,9 @@ const TrainerDashboard: React.FC = () => {
                     </Card>
                 </Grid>
 
-                {/* Today's Schedule */}                <Grid item xs={12} md={6} component="div">
-                    <Card>
+                {/* Today's Schedule */}
+                <Grid item xs={12} md={6}>
+                    <Card elevation={3}>
                         <CardContent>
                             <Typography variant="h6" gutterBottom>
                                 אימונים להיום
@@ -82,7 +112,11 @@ const TrainerDashboard: React.FC = () => {
                                             secondary={session.type}
                                         />
                                         <ListItemSecondaryAction>
-                                            <IconButton edge="end" aria-label="edit">
+                                            <IconButton
+                                                edge="end"
+                                                aria-label="edit"
+                                                onClick={() => handleEditSession(session.id)}
+                                            >
                                                 <EditIcon />
                                             </IconButton>
                                         </ListItemSecondaryAction>
@@ -95,7 +129,7 @@ const TrainerDashboard: React.FC = () => {
 
                 {/* Client List */}
                 <Grid item xs={12}>
-                    <Card>
+                    <Card elevation={3}>
                         <CardContent>
                             <Typography variant="h6" gutterBottom>
                                 מתאמנים פעילים
@@ -113,7 +147,11 @@ const TrainerDashboard: React.FC = () => {
                                             secondary={`אימון הבא: ${client.nextSession}`}
                                         />
                                         <ListItemSecondaryAction>
-                                            <IconButton edge="end" aria-label="edit">
+                                            <IconButton
+                                                edge="end"
+                                                aria-label="edit"
+                                                onClick={() => handleEditClient(client.id)}
+                                            >
                                                 <EditIcon />
                                             </IconButton>
                                         </ListItemSecondaryAction>
@@ -126,29 +164,27 @@ const TrainerDashboard: React.FC = () => {
 
                 {/* Statistics */}
                 <Grid item xs={12}>
-                    <Card>
+                    <Card elevation={3}>
                         <CardContent>
                             <Typography variant="h6" gutterBottom>
                                 סטטיסטיקות
                             </Typography>
-                            <Grid container spacing={2}>
-                                <Grid item xs={12} sm={4}>
+                            <Grid container spacing={2} component="div">
+                                <Grid item xs={12} sm={4} component="div">
                                     <Typography variant="h4" align="center">
                                         15
                                     </Typography>
                                     <Typography variant="body2" align="center">
                                         מתאמנים פעילים
                                     </Typography>
-                                </Grid>
-                                <Grid item xs={12} sm={4}>
+                                </Grid>                                <Grid item xs={12} sm={4} component="div">
                                     <Typography variant="h4" align="center">
                                         45
                                     </Typography>
                                     <Typography variant="body2" align="center">
                                         אימונים החודש
                                     </Typography>
-                                </Grid>
-                                <Grid item xs={12} sm={4}>
+                                </Grid>                                <Grid item xs={12} sm={4} component="div">
                                     <Typography variant="h4" align="center">
                                         95%
                                     </Typography>

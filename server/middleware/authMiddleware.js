@@ -37,4 +37,4 @@ const isTrainee = (req, res, next) => {
   next();
 };
 
-export default { verifyToken, isAdmin, isTrainer, isTrainee };
+export { verifyToken, isAdmin, isTrainer, isTrainee };
