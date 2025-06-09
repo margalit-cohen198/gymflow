@@ -19,3 +19,15 @@ export async function login(req, res) {
         res.status(401).json({ error: error.message });
     }
 }
+
+export async function logout(req, res) {
+    try {
+        const userId = req.userId;
+        const token = req.token; // הטוקן שהועבר מה-middleware
+        
+        const result = await authService.logout(userId, token);
+        res.status(200).json({ message: 'Logout successful',result });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to logout: ' + error.message });
+    }
+}

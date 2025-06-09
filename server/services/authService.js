@@ -6,6 +6,9 @@ import pool from '../config/db.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
+// Set to store blacklisted tokens
+const tokenBlacklist = new Set();
+
 // פונקציית הרשמה למשתמש חדש
 export async function register(userData) {
     const connection = await pool.getConnection();
@@ -84,4 +87,41 @@ export async function login(email, password) {
     delete user.password_hash;
 
     return { token, user };
+}
+
+// פונקציית התנתקות למשתמש קיים
+export async function logout(userId, token) {
+    try {
+        if (!token) {
+            throw new Error('Token is required for logout');
+        }
+
+        // הוספת הטוקן ל-blacklist
+        // בפרויקט אמיתי היינו שומרים את זה במסד נתונים
+        tokenBlacklist.add(token);
+        
+        // ניקוי טוקנים ישנים מה-blacklist (אופציונלי)
+        cleanupExpiredTokens();
+        
+        return { success: true, message: 'Logged out successfully' };
+    } catch (error) {
+        throw new Error('Logout failed: ' + error.message);
+    }
+}
+
+// בדיקה האם טוקן נמצא ב-blacklist
+export function isTokenBlacklisted(token) {
+    return tokenBlacklist.has(token);
+}
+
+// פונקציה לניקוי טוקנים שפג תוקפם מה-blacklist
+function cleanupExpiredTokens() {
+    for (const token of tokenBlacklist) {
+        try {
+            jwt.verify(token, JWT_SECRET);
+        } catch (error) {
+            // אם הטוקן פג תוקף, נסיר אותו מה-blacklist
+            tokenBlacklist.delete(token);
+        }
+    }
 }
