@@ -30,17 +30,17 @@
 ```
 ┌─────────────────────────────────────────────┐
 │         Front-End (Client Layer)            │
-│   React + Vite + Chakra-UI + React Router  │
+│   React + Vite + Chakra-UI + React Router   │
 └──────────────────┬──────────────────────────┘
                    │ HTTP/REST API
 ┌──────────────────▼──────────────────────────┐
 │      Back-End (Application Layer)           │
-│  Node.js + Express + JWT Authentication    │
+│  Node.js + Express + JWT Authentication     │
 └──────────────────┬──────────────────────────┘
                    │ Database Queries
 ┌──────────────────▼──────────────────────────┐
 │     Database Layer (MySQL)                  │
-│   Persistent Data Storage & Management     │
+│   Persistent Data Storage & Management      │
 └─────────────────────────────────────────────┘
 ```
 
